@@ -1,20 +1,11 @@
-# Usa imagen oficial de PHP con Apache
 FROM php:8.2-apache
 
-# Establece el directorio de trabajo
 WORKDIR /var/www/html
 
-# 1. Instala dependencias del sistema
-RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    sqlite3 \
-    libsqlite3-dev \
-    && docker-php-ext-install pdo pdo_sqlite \
-    && rm -rf /var/lib/apt/lists/*
-
-# 2. Configura Apache para Laravel
+# Configuración crítica de Apache
 RUN a2enmod rewrite && \
+    echo "DirectoryIndex index.php" > /etc/apache2/conf-available/laravel.conf && \
+    a2enconf laravel && \
     sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
 
 # 3. Copia TODO tu proyecto (incluyendo node_modules si es necesario)
