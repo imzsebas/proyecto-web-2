@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     sqlite3 \
-    libsqlite3-dev \  # Librería esencial para SQLite
-    pkg-config \     # ¡Corregido: sin espacios antes del
+    libsqlite3-dev \
+    pkg-config \
     && docker-php-ext-install pdo pdo_sqlite
 
 # Instala Composer globalmente
