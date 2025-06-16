@@ -6,13 +6,14 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_mysql pdo_sqlite zip \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Configurar Apache para usar tu estructura actual
+# Configuración de Apache para tu estructura
 RUN a2enmod rewrite && \
-    echo "DocumentRoot /var/www/html/public" > /etc/apache2/sites-available/000-default.conf && \
-    echo "<Directory /var/www/html/public>" >> /etc/apache2/sites-available/000-default.conf && \
-    echo "    AllowOverride All" >> /etc/apache2/sites-available/000-default.conf && \
-    echo "    Require all granted" >> /etc/apache2/sites-available/000-default.conf && \
-    echo "</Directory>" >> /etc/apache2/sites-available/000-default.conf
+    echo "<Directory /public>" > /etc/apache2/conf-available/laravel.conf && \
+    echo "    Options FollowSymLinks" >> /etc/apache2/conf-available/laravel.conf && \
+    echo "    AllowOverride All" >> /etc/apache2/conf-available/laravel.conf && \
+    echo "    Require all granted" >> /etc/apache2/conf-available/laravel.conf && \
+    echo "</Directory>" >> /etc/apache2/conf-available/laravel.conf && \
+    a2enconf laravel
 
 WORKDIR /var/www/html
 
