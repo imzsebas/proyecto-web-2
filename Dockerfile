@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Instalar dependencias de Laravel
+# 1. Instalar dependencias de Laravel
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -11,21 +11,22 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-# Instalar Composer
+# 2. Instalar Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Copiar el proyecto al contenedor
+# 3. Copiar el proyecto al contenedor
 COPY . /var/www/html
-
-# Establecer permisos y instalar dependencias
 WORKDIR /var/www/html
+
+# 4. Configurar Apache
+COPY .docker/apache.conf /etc/apache2/sites-available/000-default.conf
+RUN a2enmod rewrite && a2ensite 000-default.conf
+
+# 5. Permisos y dependencias
 RUN chmod -R 775 storage bootstrap/cache
+RUN touch database/database.sqlite
 RUN composer install --no-dev --optimize-autoloader
 
-# Configurar Apache para Laravel
-RUN a2enmod rewrite
-COPY .docker/apache.conf /etc/apache2/sites-available/000-default.conf
-
-# Puerto expuesto
+# 6. Puerto y comando de inicio
 EXPOSE 80
 CMD ["apache2-foreground"]
