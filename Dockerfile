@@ -1,31 +1,37 @@
+# Usa imagen oficial de PHP con Apache
 FROM php:8.2-apache
 
+# Establece el directorio de trabajo
 WORKDIR /var/www/html
 
-# Instalar dependencias
+# 1. Instala dependencias del sistema
 RUN apt-get update && apt-get install -y \
-    git unzip sqlite3 libsqlite3-dev \
-    && docker-php-ext-install pdo pdo_sqlite
+    git \
+    unzip \
+    sqlite3 \
+    libsqlite3-dev \
+    && docker-php-ext-install pdo pdo_sqlite \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# 2. Configura Apache para Laravel
+RUN a2enmod rewrite && \
+    sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
+
+# 3. Copia TODO tu proyecto (incluyendo node_modules si es necesario)
 COPY . .
 
-# Configuración dinámica para Render
-RUN echo "Listen 80" > /etc/apache2/ports.conf && \
-    sed -i 's/80/${PORT}/g' /etc/apache2/sites-enabled/000-default.conf && \
-    sed -i 's/80/${PORT}/g' /etc/apache2/ports.conf
+# 4. Instala Composer (sin tocar tu vendor existente)
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN composer install --optimize-autoloader --no-dev --no-scripts
 
-# Instalar dependencias de Laravel
-RUN composer install --optimize-autoloader --no-dev
-
-# Permisos para SQLite
-RUN mkdir -p database \
+# 5. Configura permisos (ajusta según tus necesidades)
+RUN chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache \
     && touch database/database.sqlite \
     && chmod 666 database/database.sqlite
 
-# Script de inicio adaptado para Render
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-ENTRYPOINT ["docker-entrypoint.sh"]
+# 6. Puerto dinámico para Render
+EXPOSE ${PORT:-80}
 
-EXPOSE $PORT
+# 7. Inicia Apache (servirá automáticamente desde /public)
+CMD ["apache2-foreground"]
