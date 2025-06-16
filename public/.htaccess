@@ -4,8 +4,6 @@
     </IfModule>
 
     RewriteEngine On
-    # Línea corregida - especifica la ruta base correctamente
-    RewriteBase
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
