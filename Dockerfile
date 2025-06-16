@@ -1,10 +1,8 @@
-# Usa una imagen oficial de PHP con Apache
 FROM php:8.2-apache
 
-# Directorio de trabajo
 WORKDIR /var/www/html
 
-# Instala dependencias del sistema + SQLite (con librerías de desarrollo)
+# Instala dependencias
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -13,26 +11,20 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     && docker-php-ext-install pdo pdo_sqlite
 
-# Instala Composer globalmente
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Copia el proyecto (excluyendo lo innecesario con .dockerignore)
 COPY . .
 
-# Instala dependencias de Laravel (sin dev)
-RUN composer install --optimize-autoloader --no-dev
+# Configura Apache para Render (¡Clave!)
+RUN echo "Listen \${PORT:-80}" > /etc/apache2/ports.conf && \
+    sed -i 's/:80\/>/:${PORT:-80}\/>/g' /etc/apache2/sites-enabled/000-default.conf
 
-# Permisos para SQLite
-RUN mkdir -p /var/www/html/database \
-    && touch /var/www/html/database/database.sqlite \
-    && chmod 777 /var/www/html/database \
-    && chmod 666 /var/www/html/database/database.sqlite
+# Instala Laravel y permisos
+RUN composer install --optimize-autoloader --no-dev && \
+    mkdir -p /var/www/html/database && \
+    touch /var/www/html/database/database.sqlite && \
+    chmod 666 /var/www/html/database/database.sqlite
 
-# Ejecuta migraciones (opcional)
-# RUN php artisan migrate --force
+# Expone el puerto (usa la misma variable)
+EXPOSE ${PORT:-80}
 
-# Expone el puerto 80
-EXPOSE 80
-
-# Inicia Apache
 CMD ["apache2-foreground"]
