@@ -555,9 +555,11 @@ Route::get('/database-viewer', function() {
             </div>
             
             <script>
-                let deleteData = {};
+                // Variables globales
+                window.deleteData = {};
                 
-                function toggleExpand(element) {
+                // Función para expandir/contraer texto
+                window.toggleExpand = function(element) {
                     if (element.classList.contains("expandable")) {
                         // Contraer
                         element.classList.remove("expandable");
@@ -574,10 +576,11 @@ Route::get('/database-viewer', function() {
                         element.innerHTML = fullText;
                         element.title = "Clic para expandir/contraer";
                     }
-                }
+                };
                 
-                function confirmDelete(table, primaryKey, primaryValue, rowId) {
-                    deleteData = {
+                // Función para confirmar eliminación
+                window.confirmDelete = function(table, primaryKey, primaryValue, rowId) {
+                    window.deleteData = {
                         table: table,
                         primaryKey: primaryKey,
                         primaryValue: primaryValue,
@@ -585,18 +588,20 @@ Route::get('/database-viewer', function() {
                     };
                     
                     document.getElementById("deleteMessage").innerText = 
-                        `¿Estás seguro de que quieres eliminar el registro con ${primaryKey} = ${primaryValue} de la tabla ${table}?`;
+                        "¿Estás seguro de que quieres eliminar el registro con " + primaryKey + " = " + primaryValue + " de la tabla " + table + "?";
                     document.getElementById("deleteModal").style.display = "block";
-                }
+                };
                 
-                function closeModal() {
+                // Función para cerrar modal
+                window.closeModal = function() {
                     document.getElementById("deleteModal").style.display = "none";
-                    deleteData = {};
-                }
+                    window.deleteData = {};
+                };
                 
-                function executeDelete() {
+                // Función para ejecutar eliminación
+                window.executeDelete = function() {
                     const modal = document.getElementById("deleteModal");
-                    const row = document.getElementById(deleteData.rowId);
+                    const row = document.getElementById(window.deleteData.rowId);
                     
                     // Mostrar loading
                     row.classList.add("loading");
@@ -607,12 +612,12 @@ Route::get('/database-viewer', function() {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": document.querySelector("meta[name="csrf-token"]")?.getAttribute("content") || ""
+                            "X-CSRF-TOKEN": document.querySelector("meta[name=csrf-token]")?.getAttribute("content") || ""
                         },
                         body: JSON.stringify({
-                            table: deleteData.table,
-                            primaryKey: deleteData.primaryKey,
-                            primaryValue: deleteData.primaryValue
+                            table: window.deleteData.table,
+                            primaryKey: window.deleteData.primaryKey,
+                            primaryValue: window.deleteData.primaryValue
                         })
                     })
                     .then(response => response.json())
@@ -622,8 +627,10 @@ Route::get('/database-viewer', function() {
                             row.remove();
                             alert("Registro eliminado exitosamente");
                             
-                            // Actualizar contador
-                            location.reload();
+                            // Actualizar contador después de un breve delay
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
                         } else {
                             alert("Error al eliminar: " + data.message);
                             row.classList.remove("loading");
@@ -633,15 +640,15 @@ Route::get('/database-viewer', function() {
                         alert("Error: " + error.message);
                         row.classList.remove("loading");
                     });
-                }
+                };
                 
                 // Cerrar modal al hacer clic fuera
                 window.onclick = function(event) {
                     const modal = document.getElementById("deleteModal");
                     if (event.target === modal) {
-                        closeModal();
+                        window.closeModal();
                     }
-                }
+                };
             </script>
         </body>
         </html>';
@@ -656,7 +663,6 @@ Route::get('/database-viewer', function() {
         ], 500);
     }
 });
-
 
 
 // Ruta para eliminar registros
