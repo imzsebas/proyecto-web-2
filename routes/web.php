@@ -133,3 +133,25 @@ Route::get('/test-db', function() {
         ], 500);
     }
 });
+
+Route::get('/debug-db', function() {
+    try {
+        $pdo = DB::connection()->getPdo();
+        $dbPath = config('database.connections.sqlite.database');
+        
+        return response()->json([
+            'status' => 'OK',
+            'database_path' => $dbPath,
+            'database_exists' => file_exists($dbPath),
+            'database_writable' => is_writable(dirname($dbPath)),
+            'users_table_exists' => Schema::hasTable('users'),
+            'users_count' => DB::table('users')->count(),
+            'connection_name' => DB::connection()->getName()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'ERROR',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});

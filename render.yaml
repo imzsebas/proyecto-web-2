@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: mirefugio
+    env: php
+    plan: free
+    buildCommand: bash build.sh
+    startCommand: php -S 0.0.0.0:$PORT -t public
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false

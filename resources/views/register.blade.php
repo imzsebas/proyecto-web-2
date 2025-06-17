@@ -12,6 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
     <link href="css/styles.css" rel="stylesheet" />
 </head>
+
 <body class="d-flex flex-column">
     <main class="flex-shrink-0">
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -137,10 +138,89 @@
             <p class="m-0 text-center text-white">Proyecto Desarrollo web 2 &copy; MiRefugio 2025</p>
         </div>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('registerForm');
+            const button = document.getElementById('registerButton');
+            const successMessage = document.getElementById('registerSuccessMessage');
+            const errorMessage = document.getElementById('registerErrorMessage');
+
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                // Limpiar mensajes previos
+                successMessage.classList.add('d-none');
+                errorMessage.classList.add('d-none');
+
+                // Validar contraseñas
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+
+                if (password !== confirmPassword) {
+                    errorMessage.textContent = 'Las contraseñas no coinciden';
+                    errorMessage.classList.remove('d-none');
+                    return;
+                }
+
+                // Validar términos
+                const terms = document.getElementById('terms').checked;
+                if (!terms) {
+                    errorMessage.textContent = 'Debes aceptar los términos y condiciones';
+                    errorMessage.classList.remove('d-none');
+                    return;
+                }
+
+                // Deshabilitar botón
+                button.disabled = true;
+                button.textContent = 'Registrando...';
+
+                // Preparar datos
+                const formData = new FormData(form);
+                const data = {};
+
+                // Convertir FormData a objeto
+                for (let [key, value] of formData.entries()) {
+                    data[key] = value;
+                }
+
+                // Agregar confirmación de contraseña
+                data.password_confirmation = confirmPassword;
+
+                try {
+                    const response = await fetch('/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        successMessage.classList.remove('d-none');
+                        setTimeout(() => {
+                            window.location.href = result.redirect || '/dashboard';
+                        }, 1500);
+                    } else {
+                        throw new Error(result.message || 'Error en el registro');
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    errorMessage.textContent = 'Error: ' + error.message;
+                    errorMessage.classList.remove('d-none');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Registrarse';
+                }
+            });
+        });</script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
     <script src="js/scripts.js"></script>
-    <script src="js/register.js"></script>
 </body>
 
 </html>
