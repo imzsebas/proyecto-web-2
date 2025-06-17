@@ -115,14 +115,20 @@ Route::get('/test-db', function() {
         DB::connection()->getPdo();
         
         $tables = DB::select("SELECT name FROM sqlite_master WHERE type='table'");
-        $users = DB::table('users')->count();
+        $usersCount = DB::table('users')->count();
+        $usersList = DB::table('users')->get(); // Añade esta línea
         $conversations = DB::table('conversations')->count();
         $messages = DB::table('messages')->count();
         
         return response()->json([
             'status' => 'SUCCESS',
             'tables' => array_map(fn($t) => $t->name, $tables),
-            'counts' => ['users' => $users, 'conversations' => $conversations, 'messages' => $messages]
+            'counts' => [
+                'users' => $usersCount, 
+                'conversations' => $conversations, 
+                'messages' => $messages
+            ],
+            'users_list' => $usersList // Añade esta línea
         ]);
         
     } catch (\Exception $e) {
