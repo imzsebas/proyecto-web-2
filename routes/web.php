@@ -207,6 +207,7 @@ Route::get('/database-viewer', function() {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="csrf-token" content="' . csrf_token() . '">
             <title>Database Viewer</title>
             <style>
                 body {
@@ -312,6 +313,64 @@ Route::get('/database-viewer', function() {
                     border-radius: 3px;
                     font-size: 12px;
                 }
+                .delete-btn {
+                    background: #dc3545;
+                    color: white;
+                    border: none;
+                    padding: 5px 10px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    transition: background 0.3s;
+                }
+                .delete-btn:hover {
+                    background: #c82333;
+                }
+                .actions-column {
+                    width: 80px;
+                    text-align: center;
+                }
+                .modal {
+                    display: none;
+                    position: fixed;
+                    z-index: 1000;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0,0,0,0.5);
+                }
+                .modal-content {
+                    background-color: white;
+                    margin: 15% auto;
+                    padding: 20px;
+                    border-radius: 8px;
+                    width: 400px;
+                    text-align: center;
+                }
+                .modal-buttons {
+                    margin-top: 20px;
+                }
+                .modal-btn {
+                    margin: 0 10px;
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                }
+                .confirm-btn {
+                    background: #dc3545;
+                    color: white;
+                }
+                .cancel-btn {
+                    background: #6c757d;
+                    color: white;
+                }
+                .loading {
+                    opacity: 0.6;
+                    pointer-events: none;
+                }
             </style>
         </head>
         <body>
@@ -352,11 +411,24 @@ Route::get('/database-viewer', function() {
                 foreach ($data['columns'] as $column) {
                     $html .= "<th>{$column->name}<br><small>({$column->type})</small></th>";
                 }
+                $html .= "<th class=\"actions-column\">Acciones</th>";
                 $html .= "</tr></thead><tbody>";
                 
                 // Data rows
-                foreach ($data['records'] as $record) {
-                    $html .= "<tr>";
+                foreach ($data['records'] as $index => $record) {
+                    $html .= "<tr id=\"row-{$tableName}-{$index}\">";
+                    
+                    // Encontrar la columna de ID (primary key)
+                    $primaryKey = null;
+                    $primaryKeyValue = null;
+                    foreach ($data['columns'] as $column) {
+                        if ($column->pk == 1) { // Es primary key
+                            $primaryKey = $column->name;
+                            $primaryKeyValue = $record->{$column->name};
+                            break;
+                        }
+                    }
+                    
                     foreach ($data['columns'] as $column) {
                         $value = $record->{$column->name} ?? null;
                         
@@ -370,6 +442,18 @@ Route::get('/database-viewer', function() {
                             $html .= "<td>" . htmlspecialchars($value) . "</td>";
                         }
                     }
+                    
+                    // Botón de eliminar
+                    if ($primaryKey && $primaryKeyValue) {
+                        $html .= "<td class=\"actions-column\">
+                            <button class=\"delete-btn\" onclick=\"confirmDelete('{$tableName}', '{$primaryKey}', '{$primaryKeyValue}', 'row-{$tableName}-{$index}')\">
+                                🗑️ Eliminar
+                            </button>
+                        </td>";
+                    } else {
+                        $html .= "<td class=\"actions-column\">N/A</td>";
+                    }
+                    
                     $html .= "</tr>";
                 }
                 
@@ -383,6 +467,89 @@ Route::get('/database-viewer', function() {
         
         $html .= '
             </div>
+            
+            <!-- Modal de confirmación -->
+            <div id="deleteModal" class="modal">
+                <div class="modal-content">
+                    <h3>⚠️ Confirmar eliminación</h3>
+                    <p id="deleteMessage">¿Estás seguro de que quieres eliminar este registro?</p>
+                    <div class="modal-buttons">
+                        <button class="modal-btn cancel-btn" onclick="closeModal()">Cancelar</button>
+                        <button class="modal-btn confirm-btn" onclick="executeDelete()">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+                let deleteData = {};
+                
+                function confirmDelete(table, primaryKey, primaryValue, rowId) {
+                    deleteData = {
+                        table: table,
+                        primaryKey: primaryKey,
+                        primaryValue: primaryValue,
+                        rowId: rowId
+                    };
+                    
+                    document.getElementById("deleteMessage").innerText = 
+                        `¿Estás seguro de que quieres eliminar el registro con ${primaryKey} = ${primaryValue} de la tabla ${table}?`;
+                    document.getElementById("deleteModal").style.display = "block";
+                }
+                
+                function closeModal() {
+                    document.getElementById("deleteModal").style.display = "none";
+                    deleteData = {};
+                }
+                
+                function executeDelete() {
+                    const modal = document.getElementById("deleteModal");
+                    const row = document.getElementById(deleteData.rowId);
+                    
+                    // Mostrar loading
+                    row.classList.add("loading");
+                    modal.style.display = "none";
+                    
+                    // Hacer la petición DELETE
+                    fetch("/delete-record", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": document.querySelector(\'meta[name="csrf-token"]\')?.getAttribute("content") || ""
+                        },
+                        body: JSON.stringify({
+                            table: deleteData.table,
+                            primaryKey: deleteData.primaryKey,
+                            primaryValue: deleteData.primaryValue
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Eliminar la fila de la tabla
+                            row.remove();
+                            alert("Registro eliminado exitosamente");
+                            
+                            // Actualizar contador
+                            location.reload();
+                        } else {
+                            alert("Error al eliminar: " + data.message);
+                            row.classList.remove("loading");
+                        }
+                    })
+                    .catch(error => {
+                        alert("Error: " + error.message);
+                        row.classList.remove("loading");
+                    });
+                }
+                
+                // Cerrar modal al hacer clic fuera
+                window.onclick = function(event) {
+                    const modal = document.getElementById("deleteModal");
+                    if (event.target === modal) {
+                        closeModal();
+                    }
+                }
+            </script>
         </body>
         </html>';
         
@@ -393,6 +560,59 @@ Route::get('/database-viewer', function() {
             'status' => 'ERROR',
             'error' => $e->getMessage(),
             'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
+
+
+
+// Ruta para eliminar registros
+Route::post('/delete-record', function(Request $request) {
+    try {
+        $table = $request->input('table');
+        $primaryKey = $request->input('primaryKey');
+        $primaryValue = $request->input('primaryValue');
+        
+        // Validar que los datos están presentes
+        if (!$table || !$primaryKey || !$primaryValue) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos incompletos'
+            ], 400);
+        }
+        
+        // Lista de tablas permitidas (por seguridad)
+        $allowedTables = DB::select("SELECT name FROM sqlite_master WHERE type='table'");
+        $allowedTableNames = array_map(fn($t) => $t->name, $allowedTables);
+        
+        if (!in_array($table, $allowedTableNames)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tabla no válida'
+            ], 400);
+        }
+        
+        // Ejecutar la eliminación
+        $deleted = DB::table($table)
+            ->where($primaryKey, $primaryValue)
+            ->delete();
+        
+        if ($deleted > 0) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Registro eliminado exitosamente'
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró el registro para eliminar'
+            ], 404);
+        }
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al eliminar: ' . $e->getMessage()
         ], 500);
     }
 });
