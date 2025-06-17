@@ -101,13 +101,7 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="remember" id="remember">
-                                    <label class="form-check-label" for="remember">
-                                        Recordarme
-                                    </label>
-                                </div>
+                        
 
                                 <div class="d-grid">
                                     <button class="btn btn-primary btn-lg" type="submit" id="submitBtn">
@@ -117,7 +111,6 @@
                                 </div>
                                 <div class="text-center mt-3">
                                     <p class="small">¿No tienes una cuenta? <a href="{{ route('register') }}">Regístrate aquí</a></p>
-                                    <p class="small"><a href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a></p>
                                 </div>
                             </form>
                         </div>
