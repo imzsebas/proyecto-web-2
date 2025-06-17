@@ -1,4 +1,6 @@
+
 <?php
+// 2025_06_13_163140_create_enlaces_sesion_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -12,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('enlaces_sesion', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id');                     // BIGSERIAL para PostgreSQL
             $table->string('nombre')->default('Sesión Virtual');
             $table->string('enlace');
             $table->boolean('activo')->default(true);

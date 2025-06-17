@@ -1,4 +1,6 @@
+
 <?php
+// 2025_05_20_190341_create_personal_access_tokens_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -12,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('personal_access_tokens', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id');                     // BIGSERIAL para PostgreSQL
             $table->morphs('tokenable');
             $table->string('name');
             $table->string('token', 64)->unique();

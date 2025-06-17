@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "ext-pdo_pgsql": "*",
         "barryvdh/laravel-dompdf": "^3.1",
         "doctrine/dbal": "^4.2",
         "laravel/framework": "^12.0",
@@ -14,6 +15,7 @@
         "laravel/tinker": "^2.10.1",
         "nahid/talk": "^1.0",
         "nesbot/carbon": "^3.9"
+        
     },
     "require-dev": {
         "beyondcode/laravel-er-diagram-generator": "^5.0",
@@ -32,6 +34,7 @@
             "Database\\Seeders\\": "database/seeders/"
         }
     },
+
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
