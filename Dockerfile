@@ -39,16 +39,26 @@ WORKDIR /var/www/html
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Copiar SOLO los archivos de composer primero (para aprovechar cache de Docker)
-COPY composer.json composer.lock ./
+COPY composer.json ./
+COPY composer.lock* ./
 
-# Instalar dependencias de PHP (antes de copiar todo el código)
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+# Verificar y limpiar composer
+RUN composer validate --strict || echo "composer.json has warnings, continuing..."
+
+# Instalar dependencias de PHP con manejo de errores
+RUN if [ -f "composer.lock" ]; then \
+        echo "Using composer.lock file..." && \
+        composer install --no-dev --optimize-autoloader --no-interaction --no-scripts; \
+    else \
+        echo "No composer.lock found, creating new one..." && \
+        composer install --no-dev --optimize-autoloader --no-interaction --no-scripts; \
+    fi
 
 # Ahora copiar el resto del proyecto (excluyendo vendor)
 COPY . .
 
 # Asegurar que no hay conflictos y re-instalar si es necesario
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer dump-autoload --optimize --no-dev
 
 # Crear directorios necesarios
 RUN mkdir -p /var/www/html/storage/logs \
