@@ -161,3 +161,13 @@ Route::get('/debug-db', function() {
         ], 500);
     }
 });
+
+Route::post('/debug-register', function(Request $request) {
+    return response()->json([
+        'received_data' => $request->all(),
+        'headers' => $request->headers->all(),
+        'content_type' => $request->header('Content-Type'),
+        'csrf_token' => csrf_token(),
+        'session_id' => session()->getId()
+    ]);
+});

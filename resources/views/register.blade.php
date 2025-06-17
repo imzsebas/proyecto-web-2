@@ -47,31 +47,30 @@
                             <form id="registerForm">
                                 @csrf
                                 <div class="form-floating mb-3">
-                                    <input class="form-control" id="name" type="text" placeholder="Nombre completo"
-                                        data-sb-validations="required" />
+                                    <input class="form-control" id="name" name="name" type="text"
+                                        placeholder="Nombre completo" required />
                                     <label for="name">Nombre completo</label>
-                                    <div class="invalid-feedback" data-sb-feedback="name:required">El nombre es
-                                        requerido.</div>
+                                    <div class="invalid-feedback">El nombre es requerido.</div>
                                 </div>
+
                                 <div class="form-floating mb-3">
-                                    <input class="form-control" id="email" type="email" placeholder="nombre@ejemplo.com"
-                                        data-sb-validations="required,email" />
+                                    <input class="form-control" id="email" name="email" type="email"
+                                        placeholder="nombre@ejemplo.com" required />
                                     <label for="email">Correo electrónico</label>
-                                    <div class="invalid-feedback" data-sb-feedback="email:required">El correo es
-                                        requerido.</div>
-                                    <div class="invalid-feedback" data-sb-feedback="email:email">El correo no es válido.
-                                    </div>
+                                    <div class="invalid-feedback">El correo es requerido.</div>
                                 </div>
+
                                 <div class="form-floating mb-3">
-                                    <input class="form-control" id="phone" type="tel" placeholder="Número de teléfono"
-                                        data-sb-validations="required" />
+                                    <input class="form-control" id="phone" name="phone" type="tel"
+                                        placeholder="Número de teléfono" required />
                                     <label for="phone">Teléfono</label>
-                                    <div class="invalid-feedback" data-sb-feedback="phone:required">El teléfono es
-                                        requerido.</div>
+                                    <div class="invalid-feedback">El teléfono es requerido.</div>
                                 </div>
+
                                 <div class="form-floating mb-3">
-                                    <select class="form-select" id="occupation" aria-label="Ocupación">
-                                        <option selected disabled value="">Seleccione una opción</option>
+                                    <select class="form-select" id="occupation" name="occupation"
+                                        aria-label="Ocupación">
+                                        <option value="">Seleccione una opción</option>
                                         <option value="student">Estudiante</option>
                                         <option value="employed">Empleado</option>
                                         <option value="freelancer">Freelancer</option>
@@ -80,26 +79,26 @@
                                     </select>
                                     <label for="occupation">Ocupación</label>
                                 </div>
+
                                 <div class="form-floating mb-3">
-                                    <input class="form-control" id="age" type="number" min="18" max="99"
-                                        placeholder="Edad" data-sb-validations="required" />
+                                    <input class="form-control" id="age" name="age" type="number" min="18" max="99"
+                                        placeholder="Edad" required />
                                     <label for="age">Edad</label>
-                                    <div class="invalid-feedback" data-sb-feedback="age:required">La edad es requerida.
-                                    </div>
+                                    <div class="invalid-feedback">La edad es requerida.</div>
                                 </div>
+
                                 <div class="form-floating mb-3">
-                                    <input class="form-control" id="password" type="password" placeholder="Contraseña"
-                                        data-sb-validations="required" />
+                                    <input class="form-control" id="password" name="password" type="password"
+                                        placeholder="Contraseña" required />
                                     <label for="password">Contraseña</label>
-                                    <div class="invalid-feedback" data-sb-feedback="password:required">La contraseña es
-                                        requerida.</div>
+                                    <div class="invalid-feedback">La contraseña es requerida.</div>
                                 </div>
+
                                 <div class="form-floating mb-3">
-                                    <input class="form-control" id="confirmPassword" type="password"
-                                        placeholder="Confirmar contraseña" data-sb-validations="required" />
+                                    <input class="form-control" id="confirmPassword" name="confirmPassword"
+                                        type="password" placeholder="Confirmar contraseña" required />
                                     <label for="confirmPassword">Confirmar contraseña</label>
-                                    <div class="invalid-feedback" data-sb-feedback="confirmPassword:required">Debes
-                                        confirmar tu contraseña.</div>
+                                    <div class="invalid-feedback">Debes confirmar tu contraseña.</div>
                                 </div>
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" id="terms" type="checkbox" value="" required />
@@ -145,28 +144,101 @@
             const successMessage = document.getElementById('registerSuccessMessage');
             const errorMessage = document.getElementById('registerErrorMessage');
 
+            // Función para mostrar errores específicos
+            function showError(message) {
+                errorMessage.innerHTML = `<div class="text-center text-danger mb-3">${message}</div>`;
+                errorMessage.classList.remove('d-none');
+                successMessage.classList.add('d-none');
+            }
+
+            // Función para limpiar errores
+            function clearErrors() {
+                document.querySelectorAll('.invalid-feedback').forEach(el => {
+                    el.style.display = 'none';
+                });
+                document.querySelectorAll('.form-control').forEach(el => {
+                    el.classList.remove('is-invalid');
+                });
+                errorMessage.classList.add('d-none');
+            }
+
+            // Función para mostrar errores de validación
+            function showValidationErrors(errors) {
+                Object.keys(errors).forEach(field => {
+                    const input = document.getElementById(field);
+                    if (input) {
+                        input.classList.add('is-invalid');
+                        const feedback = input.parentNode.querySelector('.invalid-feedback');
+                        if (feedback) {
+                            feedback.textContent = errors[field][0];
+                            feedback.style.display = 'block';
+                        }
+                    }
+                });
+            }
+
             form.addEventListener('submit', async function (e) {
                 e.preventDefault();
 
-                // Limpiar mensajes previos
-                successMessage.classList.add('d-none');
-                errorMessage.classList.add('d-none');
+                // Limpiar errores previos
+                clearErrors();
 
-                // Validar contraseñas
+                // Validaciones básicas del frontend
+                const name = document.getElementById('name').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const age = document.getElementById('age').value;
                 const password = document.getElementById('password').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
+                const terms = document.getElementById('terms').checked;
+                const occupation = document.getElementById('occupation').value;
 
+                // Validar campos vacíos
+                if (!name) {
+                    showError('El nombre es requerido');
+                    return;
+                }
+                if (!email) {
+                    showError('El correo es requerido');
+                    return;
+                }
+                if (!phone) {
+                    showError('El teléfono es requerido');
+                    return;
+                }
+                if (!age) {
+                    showError('La edad es requerida');
+                    return;
+                }
+                if (!password) {
+                    showError('La contraseña es requerida');
+                    return;
+                }
+                if (!confirmPassword) {
+                    showError('Debes confirmar la contraseña');
+                    return;
+                }
+
+                // Validar contraseñas
                 if (password !== confirmPassword) {
-                    errorMessage.textContent = 'Las contraseñas no coinciden';
-                    errorMessage.classList.remove('d-none');
+                    showError('Las contraseñas no coinciden');
+                    return;
+                }
+
+                if (password.length < 8) {
+                    showError('La contraseña debe tener al menos 8 caracteres');
                     return;
                 }
 
                 // Validar términos
-                const terms = document.getElementById('terms').checked;
                 if (!terms) {
-                    errorMessage.textContent = 'Debes aceptar los términos y condiciones';
-                    errorMessage.classList.remove('d-none');
+                    showError('Debes aceptar los términos y condiciones');
+                    return;
+                }
+
+                // Validar edad
+                if (age < 18 || age > 99) {
+                    showError('La edad debe estar entre 18 y 99 años');
                     return;
                 }
 
@@ -175,43 +247,55 @@
                 button.textContent = 'Registrando...';
 
                 // Preparar datos
-                const formData = new FormData(form);
-                const data = {};
+                const data = {
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    occupation: occupation || null,
+                    age: parseInt(age),
+                    password: password,
+                    password_confirmation: confirmPassword,
+                    _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                };
 
-                // Convertir FormData a objeto
-                for (let [key, value] of formData.entries()) {
-                    data[key] = value;
-                }
-
-                // Agregar confirmación de contraseña
-                data.password_confirmation = confirmPassword;
+                console.log('Datos a enviar:', data);
 
                 try {
                     const response = await fetch('/register', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Accept': 'application/json'
+                            'X-CSRF-TOKEN': data._token,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: JSON.stringify(data)
                     });
 
-                    const result = await response.json();
+                    console.log('Response status:', response.status);
 
-                    if (result.status === 'success') {
+                    const result = await response.json();
+                    console.log('Response data:', result);
+
+                    if (response.ok && result.status === 'success') {
                         successMessage.classList.remove('d-none');
                         setTimeout(() => {
                             window.location.href = result.redirect || '/dashboard';
                         }, 1500);
+                    } else if (response.status === 422) {
+                        // Error de validación
+                        if (result.errors) {
+                            showValidationErrors(result.errors);
+                        } else {
+                            showError(result.first_error || result.message || 'Error de validación');
+                        }
                     } else {
-                        throw new Error(result.message || 'Error en el registro');
+                        showError(result.message || 'Error en el servidor');
                     }
 
                 } catch (error) {
-                    console.error('Error:', error);
-                    errorMessage.textContent = 'Error: ' + error.message;
-                    errorMessage.classList.remove('d-none');
+                    console.error('Error completo:', error);
+                    showError('Error de conexión: ' + error.message);
                 } finally {
                     button.disabled = false;
                     button.textContent = 'Registrarse';

@@ -19,36 +19,58 @@ class RegisterController extends Controller
 
     public function register(Request $request)
     {
-        Log::info('Registro iniciado', ['data' => $request->except('password', 'password_confirmation')]);
-        
-        // Validación
+        // Log para ver qué datos llegan
+        Log::info('Datos recibidos en registro:', [
+            'all_data' => $request->all(),
+            'headers' => $request->headers->all(),
+            'content_type' => $request->header('Content-Type')
+        ]);
+
+        // Validación con mensajes específicos
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => 'required|string|max:20',
             'occupation' => 'nullable|string|max:50',
             'age' => 'required|integer|min:18|max:99',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8',
+            'password_confirmation' => 'required|string|min:8|same:password',
         ], [
+            'name.required' => 'El nombre es requerido',
+            'email.required' => 'El correo es requerido',
+            'email.email' => 'El correo debe ser válido',
             'email.unique' => 'Este correo ya está registrado',
-            'password.confirmed' => 'Las contraseñas no coinciden',
+            'phone.required' => 'El teléfono es requerido',
+            'age.required' => 'La edad es requerida',
+            'age.integer' => 'La edad debe ser un número',
+            'age.min' => 'Debes ser mayor de 18 años',
+            'age.max' => 'La edad no puede ser mayor a 99',
+            'password.required' => 'La contraseña es requerida',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres',
+            'password_confirmation.required' => 'Debes confirmar la contraseña',
+            'password_confirmation.same' => 'Las contraseñas no coinciden',
         ]);
 
         if ($validator->fails()) {
-            Log::warning('Validación fallida', ['errors' => $validator->errors()]);
+            Log::warning('Validación fallida:', [
+                'errors' => $validator->errors()->toArray(),
+                'data' => $request->except(['password', 'password_confirmation'])
+            ]);
+            
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error de validación',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors()->toArray(),
+                'first_error' => $validator->errors()->first()
             ], 422);
         }
 
         try {
-            // Verificar conexión a base de datos
+            // Verificar conexión a BD
             DB::connection()->getPdo();
             Log::info('Conexión a BD exitosa');
 
-            // Usar transacción para SQLite
+            // Crear usuario
             DB::beginTransaction();
             
             $user = User::create([
@@ -64,7 +86,7 @@ class RegisterController extends Controller
             DB::commit();
             Log::info('Usuario creado exitosamente', ['user_id' => $user->id]);
 
-            // Autenticar usuario
+            // Autenticar
             Auth::login($user);
 
             return response()->json([
@@ -75,14 +97,15 @@ class RegisterController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error en registro', [
+            Log::error('Error en registro:', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
             ]);
             
             return response()->json([
                 'status' => 'error',
-                'message' => 'Error interno del servidor: ' . $e->getMessage()
+                'message' => 'Error interno: ' . $e->getMessage()
             ], 500);
         }
     }
