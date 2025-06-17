@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="description" content />
         <meta name="author" content />
         <title>Contactanos / MiRefugio</title>
@@ -131,55 +132,69 @@
         <script src="js/scripts.js"></script>
         <script>
         document.getElementById('contactForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+    e.preventDefault();
+    
+    const submitButton = document.getElementById('submitButton');
+    const originalText = submitButton.textContent;
+    
+    // Mostrar estado de carga
+    submitButton.textContent = 'Enviando...';
+    submitButton.disabled = true;
+    
+    // Ocultar mensajes anteriores
+    document.getElementById('submitSuccessMessage').classList.add('d-none');
+    document.getElementById('submitErrorMessage').classList.add('d-none');
+    
+    // Limpiar validaciones visuales anteriores
+    document.querySelectorAll('.is-invalid').forEach(field => field.classList.remove('is-invalid'));
+    document.querySelectorAll('[data-sb-feedback]').forEach(feedback => feedback.style.display = 'none');
+    
+    const formData = new FormData(this);
+    
+    // SOLUCIÓN: Usar URL relativa o asegurar HTTPS
+    const contactUrl = '{{ route("contact.send") }}';
+    
+    fetch(contactUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Mostrar mensaje de éxito
+            document.getElementById('submitSuccessMessage').classList.remove('d-none');
             
-            const submitButton = document.getElementById('submitButton');
-            const originalText = submitButton.textContent;
-            
-            // Mostrar estado de carga
-            submitButton.textContent = 'Enviando...';
-            submitButton.disabled = true;
-            
-            // Ocultar mensajes anteriores
-            document.getElementById('submitSuccessMessage').classList.add('d-none');
-            document.getElementById('submitErrorMessage').classList.add('d-none');
-            
-            // Limpiar validaciones visuales anteriores
-            document.querySelectorAll('.is-invalid').forEach(field => field.classList.remove('is-invalid'));
-            document.querySelectorAll('[data-sb-feedback]').forEach(feedback => feedback.style.display = 'none');
-            
-            const formData = new FormData(this);
-            
-            fetch('{{ route("contact.send") }}', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Mostrar mensaje de éxito
-                    document.getElementById('submitSuccessMessage').classList.remove('d-none');
-                    
-                    // Limpiar formulario
-                    this.reset();
-                } else {
-                    throw new Error(data.message || 'Error al enviar el mensaje');
-                }
-            })
-            .catch(error => {
-                // Mostrar mensaje de error
-                document.getElementById('submitErrorMessage').classList.remove('d-none');
-                console.error('Error:', error);
-            })
-            .finally(() => {
-                // Restaurar botón
-                submitButton.textContent = originalText;
-                submitButton.disabled = false;
-            });
-        });
+            // Limpiar formulario
+            this.reset();
+        } else {
+            throw new Error(data.message || 'Error al enviar el mensaje');
+        }
+    })
+    .catch(error => {
+        // Mostrar mensaje de error
+        document.getElementById('submitErrorMessage').classList.remove('d-none');
+        console.error('Error:', error);
+        
+        // Mostrar error específico en desarrollo
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.error('Error detallado:', error);
+        }
+    })
+    .finally(() => {
+        // Restaurar botón
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+    });
+});
         </script>
     </body>
 </html>
