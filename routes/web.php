@@ -109,3 +109,27 @@ Route::get('/reportes/descargar/{patient}', [ReportController::class, 'downloadP
 Route::get('/api/enlace-sesion/activo', [EnlaceSesionController::class, 'obtenerEnlaceActivo']);
 Route::post('/api/enlace-sesion/guardar', [EnlaceSesionController::class, 'guardarEnlace']);
 Route::get('/api/enlace-sesion/historial', [EnlaceSesionController::class, 'historial']);
+
+Route::get('/test-db', function() {
+    try {
+        DB::connection()->getPdo();
+        
+        $tables = DB::select("SELECT name FROM sqlite_master WHERE type='table'");
+        $users = DB::table('users')->count();
+        $conversations = DB::table('conversations')->count();
+        $messages = DB::table('messages')->count();
+        
+        return response()->json([
+            'status' => 'SUCCESS',
+            'tables' => array_map(fn($t) => $t->name, $tables),
+            'counts' => ['users' => $users, 'conversations' => $conversations, 'messages' => $messages]
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'ERROR',
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
