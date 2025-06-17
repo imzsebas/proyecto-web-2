@@ -1259,72 +1259,72 @@
                 }
 
                 // Reemplaza la función sendMessage() con esta versión mejorada para debug
-function sendMessage() {
-    const message = chatInput.value.trim();
+                function sendMessage() {
+                    const message = chatInput.value.trim();
 
-    if (message === '' || isLoading) return;
+                    if (message === '' || isLoading) return;
 
-    isLoading = true;
-    chatSend.disabled = true;
+                    isLoading = true;
+                    chatSend.disabled = true;
 
-    // Mostrar mensaje del usuario inmediatamente
-    displayMessage(message, {{ auth()->id() ?? 0 }}, 'Tú');
-    chatInput.value = '';
+                    // Mostrar mensaje del usuario inmediatamente
+                    displayMessage(message, {{ auth()->id() ?? 0 }}, 'Tú');
+                    chatInput.value = '';
 
-    fetch('/chat/send', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({
-            message: message,
-            conversation_id: currentConversationId
-        })
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-        
-        // Capturar el texto de la respuesta para debug
-        return response.text().then(text => {
-            console.log('Response text:', text);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${text}`);
-            }
-            
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                throw new Error(`Invalid JSON: ${text}`);
-            }
-        });
-    })
-    .then(data => {
-        console.log('Success data:', data);
-        
-        if (data.conversation_id) {
-            currentConversationId = data.conversation_id;
-            document.querySelector('.chat-status').style.display = 'inline';
-        }
-        displayMessages(data.messages);
-        chatInput.focus();
-    })
-    .catch(error => {
-        console.error('Detailed error:', error);
-        
-        // Mostrar el error específico
-        showAlert('error', 'Error detallado', error.message);
-        
-        // También mostrar en consola para debug
-        console.error('Full error object:', error);
-    })
-    .finally(() => {
-        isLoading = false;
-        chatSend.disabled = false;
-    });
-}
+                    fetch('/chat/send', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            conversation_id: currentConversationId
+                        })
+                    })
+                        .then(response => {
+                            console.log('Response status:', response.status);
+                            console.log('Response ok:', response.ok);
+
+                            // Capturar el texto de la respuesta para debug
+                            return response.text().then(text => {
+                                console.log('Response text:', text);
+
+                                if (!response.ok) {
+                                    throw new Error(`HTTP ${response.status}: ${text}`);
+                                }
+
+                                try {
+                                    return JSON.parse(text);
+                                } catch (e) {
+                                    throw new Error(`Invalid JSON: ${text}`);
+                                }
+                            });
+                        })
+                        .then(data => {
+                            console.log('Success data:', data);
+
+                            if (data.conversation_id) {
+                                currentConversationId = data.conversation_id;
+                                document.querySelector('.chat-status').style.display = 'inline';
+                            }
+                            displayMessages(data.messages);
+                            chatInput.focus();
+                        })
+                        .catch(error => {
+                            console.error('Detailed error:', error);
+
+                            // Mostrar el error específico
+                            showAlert('error', 'Error detallado', error.message);
+
+                            // También mostrar en consola para debug
+                            console.error('Full error object:', error);
+                        })
+                        .finally(() => {
+                            isLoading = false;
+                            chatSend.disabled = false;
+                        });
+                }
 
                 function loadMessages() {
                     if (!currentConversationId) return;
