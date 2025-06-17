@@ -11,9 +11,7 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     libzip-dev \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
 # Habilitar mod_rewrite de Apache
 RUN a2enmod rewrite
@@ -38,45 +36,22 @@ WORKDIR /var/www/html
 # Copiar composer desde imagen oficial
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copiar SOLO los archivos de composer primero (para aprovechar cache de Docker)
-COPY composer.json ./
-COPY composer.lock* ./
-
-# Verificar y limpiar composer
-RUN composer validate --strict || echo "composer.json has warnings, continuing..."
-
-# Instalar dependencias de PHP con manejo de errores
-RUN if [ -f "composer.lock" ]; then \
-        echo "Using composer.lock file..." && \
-        composer install --no-dev --optimize-autoloader --no-interaction --no-scripts; \
-    else \
-        echo "No composer.lock found, creating new one..." && \
-        composer install --no-dev --optimize-autoloader --no-interaction --no-scripts; \
-    fi
-
-# Ahora copiar el resto del proyecto (excluyendo vendor)
+# Copiar archivos del proyecto
 COPY . .
 
-# Asegurar que no hay conflictos y re-instalar si es necesario
-RUN composer dump-autoload --optimize --no-dev
+# Instalar dependencias de PHP
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Crear directorios necesarios
-RUN mkdir -p /var/www/html/storage/logs \
-    && mkdir -p /var/www/html/storage/framework/cache \
-    && mkdir -p /var/www/html/storage/framework/sessions \
-    && mkdir -p /var/www/html/storage/framework/views \
-    && mkdir -p /var/www/html/bootstrap/cache
-
-# Crear archivo de base de datos SQLite si no existe
-RUN mkdir -p /var/www/html/database && \
-    touch /var/www/html/database/database.sqlite
-
-# Configurar permisos (IMPORTANTE: hacer esto al final)
+# Configurar permisos
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/bootstrap/cache \
-    && chmod 666 /var/www/html/database/database.sqlite
+    && chmod -R 775 /var/www/html/bootstrap/cache
+
+# Crear archivo de base de datos SQLite si no existe
+RUN touch /var/www/html/database/database.sqlite \
+    && chmod 666 /var/www/html/database/database.sqlite \
+    && chown www-data:www-data /var/www/html/database/database.sqlite
 
 # Configurar variables de entorno por defecto
 ENV APP_ENV=production \

@@ -1,6 +1,4 @@
-
 <?php
-// 2025_05_20_181358_create_users_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -14,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->bigIncrements('id');                     // BIGSERIAL para PostgreSQL
+            $table->id();                                    // ID autoincremental
             $table->string('name');                          // Nombre del usuario
             $table->string('email')->unique();               // Email único
             $table->string('phone');                         // Teléfono
