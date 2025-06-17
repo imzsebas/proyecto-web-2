@@ -231,6 +231,26 @@ Route::get('/database-viewer', function() {
                     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
                     overflow: hidden;
                 }
+                .table-container {
+                    overflow-x: auto;
+                    overflow-y: visible;
+                    max-width: 100%;
+                    position: relative;
+                }
+                .table-container::-webkit-scrollbar {
+                    height: 12px;
+                }
+                .table-container::-webkit-scrollbar-track {
+                    background: #f1f1f1;
+                    border-radius: 6px;
+                }
+                .table-container::-webkit-scrollbar-thumb {
+                    background: #c1c1c1;
+                    border-radius: 6px;
+                }
+                .table-container::-webkit-scrollbar-thumb:hover {
+                    background: #a8a8a8;
+                }
                 .table-header {
                     background: #4CAF50;
                     color: white;
@@ -249,6 +269,7 @@ Route::get('/database-viewer', function() {
                     width: 100%;
                     border-collapse: collapse;
                     margin: 0;
+                    min-width: fit-content;
                 }
                 .data-table th {
                     background: #f8f9fa;
@@ -258,12 +279,19 @@ Route::get('/database-viewer', function() {
                     font-weight: 600;
                     color: #495057;
                     font-size: 13px;
+                    white-space: nowrap;
+                    min-width: 120px;
+                    position: sticky;
+                    top: 0;
+                    z-index: 10;
                 }
                 .data-table td {
                     padding: 10px 8px;
                     border-bottom: 1px solid #dee2e6;
                     font-size: 13px;
                     vertical-align: top;
+                    white-space: nowrap;
+                    min-width: 120px;
                 }
                 .data-table tr:hover {
                     background-color: #f8f9fa;
@@ -301,6 +329,16 @@ Route::get('/database-viewer', function() {
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
+                    cursor: pointer;
+                }
+                .long-text:hover {
+                    background: #e9ecef;
+                    border-radius: 3px;
+                }
+                .expandable {
+                    white-space: normal !important;
+                    word-wrap: break-word;
+                    max-width: 300px;
                 }
                 .null-value {
                     color: #999;
@@ -329,6 +367,18 @@ Route::get('/database-viewer', function() {
                 .actions-column {
                     width: 80px;
                     text-align: center;
+                    position: sticky;
+                    right: 0;
+                    background: #f8f9fa;
+                    border-left: 2px solid #dee2e6;
+                    z-index: 5;
+                }
+                .actions-column td {
+                    background: white;
+                    border-left: 2px solid #dee2e6;
+                }
+                .data-table tr:hover .actions-column td {
+                    background: #f8f9fa;
                 }
                 .modal {
                     display: none;
@@ -371,6 +421,18 @@ Route::get('/database-viewer', function() {
                     opacity: 0.6;
                     pointer-events: none;
                 }
+                .scroll-hint {
+                    background: #fff3cd;
+                    color: #856404;
+                    padding: 8px 15px;
+                    font-size: 12px;
+                    text-align: center;
+                    border-bottom: 1px solid #ffeaa7;
+                }
+                .column-count {
+                    font-weight: bold;
+                    color: #007bff;
+                }
             </style>
         </head>
         <body>
@@ -405,6 +467,17 @@ Route::get('/database-viewer', function() {
                     </div>";
             
             if ($data['count'] > 0) {
+                $columnCount = count($data['columns']);
+                
+                // Mostrar hint de scroll si hay muchas columnas
+                if ($columnCount > 6) {
+                    $html .= "<div class=\"scroll-hint\">
+                        📱 Esta tabla tiene <span class=\"column-count\">{$columnCount} columnas</span>. 
+                        Desliza horizontalmente para ver todas las columnas. La columna de acciones permanece fija.
+                    </div>";
+                }
+                
+                $html .= "<div class=\"table-container\">";
                 $html .= "<table class=\"data-table\"><thead><tr>";
                 
                 // Headers
@@ -435,7 +508,7 @@ Route::get('/database-viewer', function() {
                         if ($value === null) {
                             $html .= "<td><span class=\"null-value\">NULL</span></td>";
                         } elseif (is_string($value) && (strlen($value) > 50)) {
-                            $html .= "<td><div class=\"long-text\" title=\"" . htmlspecialchars($value) . "\">" . htmlspecialchars(substr($value, 0, 50)) . "...</div></td>";
+                            $html .= "<td><div class=\"long-text\" onclick=\"toggleExpand(this)\" title=\"Clic para expandir/contraer\">" . htmlspecialchars(substr($value, 0, 50)) . "...</div></td>";
                         } elseif (is_string($value) && (json_decode($value) !== null)) {
                             $html .= "<td><span class=\"json-value\">" . htmlspecialchars($value) . "</span></td>";
                         } else {
@@ -443,7 +516,7 @@ Route::get('/database-viewer', function() {
                         }
                     }
                     
-                    // Botón de eliminar
+                    // Botón de eliminar (fijo a la derecha)
                     if ($primaryKey && $primaryKeyValue) {
                         $html .= "<td class=\"actions-column\">
                             <button class=\"delete-btn\" onclick=\"confirmDelete('{$tableName}', '{$primaryKey}', '{$primaryKeyValue}', 'row-{$tableName}-{$index}')\">
@@ -458,6 +531,7 @@ Route::get('/database-viewer', function() {
                 }
                 
                 $html .= "</tbody></table>";
+                $html .= "</div>"; // Cerrar table-container
             } else {
                 $html .= "<div class=\"no-data\">No hay registros en esta tabla</div>";
             }
@@ -482,6 +556,25 @@ Route::get('/database-viewer', function() {
             
             <script>
                 let deleteData = {};
+                
+                function toggleExpand(element) {
+                    if (element.classList.contains("expandable")) {
+                        // Contraer
+                        element.classList.remove("expandable");
+                        const originalText = element.getAttribute("data-full-text");
+                        element.innerHTML = originalText.substring(0, 50) + "...";
+                        element.title = "Clic para expandir/contraer";
+                    } else {
+                        // Expandir
+                        element.classList.add("expandable");
+                        const fullText = element.title || element.getAttribute("data-full-text");
+                        if (!element.getAttribute("data-full-text")) {
+                            element.setAttribute("data-full-text", element.innerHTML.replace("...", ""));
+                        }
+                        element.innerHTML = fullText;
+                        element.title = "Clic para expandir/contraer";
+                    }
+                }
                 
                 function confirmDelete(table, primaryKey, primaryValue, rowId) {
                     deleteData = {
@@ -514,7 +607,7 @@ Route::get('/database-viewer', function() {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": document.querySelector(\'meta[name="csrf-token"]\')?.getAttribute("content") || ""
+                            "X-CSRF-TOKEN": document.querySelector("meta[name="csrf-token"]")?.getAttribute("content") || ""
                         },
                         body: JSON.stringify({
                             table: deleteData.table,
